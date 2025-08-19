@@ -1,9 +1,17 @@
-# app/services/memory.py
-
 from langchain_community.chat_message_histories import ChatMessageHistory
-from sqlalchemy.orm import Session
+from langchain_core.chat_history import BaseChatMessageHistory
+from typing import Dict
+from app.core.client import vectorstore
 
-# LangChain Agent에서 사용하는 히스토리 반환 함수
-# 과거 대화 히스토리는 system prompt로 요약 삽입되므로 memory는 비워서 시작
-def get_user_history(user_id: str, db: Session) -> ChatMessageHistory:
-    return ChatMessageHistory()
+_store: Dict[str, ChatMessageHistory] = {}
+
+def get_user_history(user_id: str) -> BaseChatMessageHistory:
+    if user_id not in _store:
+        _store[user_id] = ChatMessageHistory()
+    return _store[user_id]
+
+def search_memory(query: str, top_k: int = 3) -> str:
+    results = vectorstore.similarity_search(query, k=top_k)
+    if not results:
+        return ""
+    return "\n".join([doc.page_content for doc in results])

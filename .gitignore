@@ -16,3 +16,5 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+
+outputs_trainer_final2
