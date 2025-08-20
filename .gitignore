@@ -9,6 +9,7 @@ __pycache__/
 venv/
 ENV/
 env/
+.venv
 
 # VSCode
 .vscode/
@@ -17,6 +18,5 @@ env/
 .DS_Store
 Thumbs.db
 
-.venv
-
+# 감정분류 모델 
 outputs_trainer_final2
