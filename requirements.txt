@@ -13,3 +13,7 @@ pymysql
 sqlalchemy
 langgraph
 pytz
+transformers
+datasets
+accelerate
+cryptography
