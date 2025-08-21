@@ -1,0 +1,79 @@
+name: Deploy JamJam_AI to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Create .env file from secrets
+      run: |
+        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+        echo "QDRANT_URL=${{ secrets.QDRANT_URL }}" >> .env
+        echo "QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}" >> .env
+        echo "COLLECTION_NAME=${{ secrets.COLLECTION_NAME }}" >> .env
+        echo "COLLECTION_NAMEU=${{ secrets.COLLECTION_NAMEU }}" >> .env
+        echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> .env
+        echo "MYSQL_PORT=${{ secrets.MYSQL_PORT }}" >> .env
+        echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
+        echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
+        echo "MYSQL_DB=${{ secrets.MYSQL_DB }}" >> .env
+        echo "LANGSMITH_TRACING=true" >> .env
+        echo "LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}" >> .env
+        echo "LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}" >> .env
+        echo "LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}" >> .env
+
+    - name: SSH to EC2 and deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.AWS_EC2_HOST }}
+        username: ${{ secrets.AWS_EC2_USER }}
+        key: ${{ secrets.AWS_EC2_KEY }}
+        port: 22
+        script: |
+          echo "==== 프로젝트 디렉토리 확인 ===="
+          cd ~/JamJam_AI || git clone https://github.com/julle0123/JamJam_AI.git ~/JamJam_AI
+          cd ~/JamJam_AI
+          git pull origin main
+
+          echo "==== .env 파일 구성 ===="
+          cat > .env <<EOF
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          QDRANT_URL=${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}
+          COLLECTION_NAME=${{ secrets.COLLECTION_NAME }}
+          COLLECTION_NAMEU=${{ secrets.COLLECTION_NAMEU }}
+          MYSQL_HOST=${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT=${{ secrets.MYSQL_PORT }}
+          MYSQL_USER=${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DB=${{ secrets.MYSQL_DB }}
+          LANGSMITH_TRACING=true
+          LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
+          LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
+          EOF
+
+          echo "==== 기존 컨테이너 정리 ===="
+          docker rm -f jamjam || echo "기존 컨테이너 없음"
+
+          echo "==== 새 이미지 빌드 ===="
+          docker build -t jamjam-ai .
+
+          echo "==== 새 컨테이너 실행 ===="
+          docker run -d \
+            -p 8000:8000 \
+            --env-file .env \
+            --restart always \
+            --name jamjam \
+            -v /home/ubuntu/JamJam_AI/models:/app/models \
+            jamjam-ai
+
+          echo "==== 배포 완료 ===="
+          docker ps | grep jamjam
