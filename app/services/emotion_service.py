@@ -3,7 +3,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 #MODEL_PATH = "outputs_trainer_final2/best_model" # 로컬 모델 경로
-MODEL_PATH = "/home/ubuntu/best_model" # 서버 모델 경로
+MODEL_PATH = "/app/best_model" # 서버 모델 경로
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH, local_files_only=True)
