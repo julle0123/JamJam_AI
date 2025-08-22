@@ -1,0 +1,6 @@
+.git
+__pycache__/
+*.pyc
+models/            # 로컬 모델 폴더가 있으면 반드시 제외
+outputs*/
+node_modules/

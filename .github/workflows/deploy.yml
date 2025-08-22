@@ -60,6 +60,10 @@ jobs:
           LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
           EOF
 
+          echo "==== Docker 정리(공간 확보) ===="
+          sudo docker system prune -af || true
+          sudo docker builder prune -af || true
+
           echo "==== 기존 컨테이너 정리 ===="
           docker rm -f jamjam || echo "기존 컨테이너 없음"
 
