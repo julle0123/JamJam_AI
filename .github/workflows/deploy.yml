@@ -59,7 +59,7 @@ jobs:
             --env-file .env \
             --restart always \
             --name jamjam \
-            -v /home/ubuntu/JamJam_AI/models:/app/models \
+            -v /home/ubuntu/best_model:/app/best_model \
             jamjam-ai
 
           echo "==== 배포 완료 ===="

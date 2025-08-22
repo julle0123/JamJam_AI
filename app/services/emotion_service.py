@@ -5,8 +5,8 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 #MODEL_PATH = "outputs_trainer_final2/best_model" # 로컬 모델 경로
 MODEL_PATH = "/home/ubuntu/best_model" # 서버 모델 경로
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH, local_files_only=True)
 
 id2label = {0: "분노", 1: "불안", 2: "슬픔", 3: "평온", 4: "당황", 5: "기쁨"}
 
