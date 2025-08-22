@@ -12,28 +12,11 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v4
 
-    - name: Create .env file from secrets
-      run: |
-        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
-        echo "QDRANT_URL=${{ secrets.QDRANT_URL }}" >> .env
-        echo "QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}" >> .env
-        echo "COLLECTION_NAME=${{ secrets.COLLECTION_NAME }}" >> .env
-        echo "COLLECTION_NAMEU=${{ secrets.COLLECTION_NAMEU }}" >> .env
-        echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> .env
-        echo "MYSQL_PORT=${{ secrets.MYSQL_PORT }}" >> .env
-        echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-        echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
-        echo "MYSQL_DB=${{ secrets.MYSQL_DB }}" >> .env
-        echo "LANGSMITH_TRACING=true" >> .env
-        echo "LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}" >> .env
-        echo "LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}" >> .env
-        echo "LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}" >> .env
-
     - name: SSH to EC2 and deploy
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.AWS_EC2_HOST }}
-        username: ${{ secrets.AWS_EC2_USER }}
+        username: ubuntu
         key: ${{ secrets.AWS_EC2_KEY }}
         port: 22
         script: |
