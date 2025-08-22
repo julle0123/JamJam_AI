@@ -1,6 +1,8 @@
+# app/models/user.py
 from sqlalchemy import Column, String, DateTime, BigInteger, Integer
 from datetime import datetime
-from app.models.base import Base  
+from sqlalchemy.orm import relationship
+from app.models.base import Base
 
 class User(Base):
     __tablename__ = "member"
@@ -14,5 +16,9 @@ class User(Base):
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     last_login_at = Column(DateTime, nullable=True)
 
+    chat_logs = relationship("ChatLog", back_populates="member", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User(member_id={self.member_id}, provider={self.provider}, nickname={self.nickname})>"
+
+

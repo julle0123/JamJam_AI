@@ -1,33 +1,27 @@
+# app/graph/graph.py
 from langgraph.graph import StateGraph, END
-from app.graph.state import ChatState
+from langgraph.prebuilt import ToolNode
+from app.graph.state import AgentState
 from app.graph import nodes
+from app.graph.tools import classify_emotion_tool, rag_search_tool, summarize_tool
 
-def build_graph():
-    graph = StateGraph(ChatState)
+def build_agent_graph():
+    g = StateGraph(AgentState)
 
-    graph.add_node("decide_tools", nodes.decide_tools_node)
-    graph.add_node("classify_emotion", nodes.classify_emotion_node)
-    graph.add_node("rag_search", nodes.rag_node)
-    graph.add_node("summarize", nodes.summary_node)
-    graph.add_node("generate_response", nodes.generate_response_node)
+    g.add_node("agent", nodes.call_agent)
+    g.add_node("tools", ToolNode([classify_emotion_tool, rag_search_tool, summarize_tool]))
+    g.add_node("tools_to_prompt", nodes.tools_to_prompt)
+    g.add_node("finalize", nodes.finalize)
 
-    graph.set_entry_point("decide_tools")
+    g.set_entry_point("agent")
+    g.add_conditional_edges("agent", nodes.should_call_tools, {
+        "tools": "tools",
+        "finalize": "finalize",
+    })
 
-    # 조건 분기: LLM 판단 결과에 따라 선택된 툴만 실행
-    def tool_selector(state):
-        selected = []
-        if state["tool_flags"].get("use_emotion"): selected.append("classify_emotion")
-        if state["tool_flags"].get("use_rag"): selected.append("rag_search")
-        if state["tool_flags"].get("use_summary"): selected.append("summarize")
-        selected.append("generate_response")  # 항상 실행
-        return selected
+    # Tool 실행 → 결과 요약 저장 → 다시 agent 호출
+    g.add_edge("tools", "tools_to_prompt")
+    g.add_edge("tools_to_prompt", "agent")
 
-    graph.add_conditional_edges("decide_tools", tool_selector)
-
-    # 툴 실행 후 응답 노드로 합류
-    graph.add_edge("classify_emotion", "generate_response")
-    graph.add_edge("rag_search", "generate_response")
-    graph.add_edge("summarize", "generate_response")
-    graph.add_edge("generate_response", END)
-
-    return graph.compile()
+    g.add_edge("finalize", END)
+    return g.compile()

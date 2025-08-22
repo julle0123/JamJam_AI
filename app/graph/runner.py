@@ -1,28 +1,35 @@
-from app.graph.graph import build_graph
-from app.graph.state import ChatState
-from app.services.memory import get_user_history
+# app/graph/runner.py
+from typing import Optional
+from sqlalchemy.orm import Session
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from app.graph.graph import build_agent_graph
+from app.services.memory import get_user_history
 
-async def run_chat(user_input: str, user_id: int, persona: str = "emotional") -> str:
-    workflow = build_graph()
+async def run_chat_agent(
+    user_input: str,
+    user_id: int,
+    db: Optional[Session] = None,
+    session_id: Optional[str] = None,
+) -> str:
+    graph = build_agent_graph()
 
-    # 히스토리 래핑 (LangChain RunnableWithMessageHistory)
-    workflow_with_memory = RunnableWithMessageHistory(
-        workflow,
+    agent_with_history = RunnableWithMessageHistory(
+        graph,
         get_user_history,
-        input_messages_key="user_input",
-        history_messages_key="history"
+        input_messages_key="messages",
+        history_messages_key="messages",
     )
 
-    initial_state: ChatState = {
-        "user_input": user_input,
-        "member_id": user_id,
-        "persona": persona
-    }
+    sid = str(session_id or user_id)
 
-    final_state = workflow_with_memory.invoke(
-        initial_state,
-        config={"configurable": {"session_id": str(user_id)}}
+    out = await agent_with_history.ainvoke(
+        # 이번 턴 입력은 반드시 current_user_input에 넣고,
+        # messages는 히스토리 저장용으로 그래프가 반환하는 값을 사용하게 둔다.
+        {"current_user_input": user_input, "member_id": user_id},
+        config={
+            "configurable": {"session_id": sid},
+            "tags": ["agent", f"user:{user_id}", f"session:{sid}"],
+            "metadata": {"member_id": user_id, "session_id": sid},
+        },
     )
-
-    return final_state["response"]
+    return out.get("response", "")

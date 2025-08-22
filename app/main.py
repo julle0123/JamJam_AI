@@ -1,7 +1,10 @@
+# app/main.py
 from fastapi import FastAPI
 from app.api import chat   # chat.py 라우터 import
 from app.models.base import Base            # SQLAlchemy Base 모델
 from app.core.db import engine              # DB 연결 유지
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI(title="JAMJAM AI")
 

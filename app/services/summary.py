@@ -2,10 +2,8 @@
 from sqlalchemy.orm import Session
 from app.models.chat_log import ChatLog
 from app.core.client import llm
-def summarize_conversation(member_id: int, db: Session = None, limit: int = 20) -> str:
-    """
-    특정 사용자의 최근 대화를 요약한다.
-    """
+
+async def summarize_conversation(member_id: int, db: Session = None, limit: int = 20) -> str:
     if db is None:
         return ""
 
@@ -19,15 +17,13 @@ def summarize_conversation(member_id: int, db: Session = None, limit: int = 20) 
     if not chats:
         return ""
 
-    # 텍스트 병합
     conversation_text = "\n".join([f"U: {c.user_text}\nB: {c.bot_text}" for c in reversed(chats)])
 
-    # 요약 프롬프트
     prompt = f"""
-    아래는 사용자와 챗봇의 대화 기록이다. 
-    최근 대화 맥락을 요약해서 제공해라.
+아래는 사용자와 챗봇의 대화 기록이다.
+최근 대화 맥락을 5줄 이내로 핵심만 요약하라.
 
-    {conversation_text}
-    """
-    summary = llm.invoke(prompt)
-    return summary
+{conversation_text}
+"""
+    msg = await llm.ainvoke(prompt, config={"run_name": "Summarize"})
+    return getattr(msg, "content", str(msg))
