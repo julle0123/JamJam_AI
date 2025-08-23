@@ -1,23 +1,24 @@
 # app/graph/state.py
-from typing import TypedDict, List, Optional, Any, Annotated
+# LangGraph 상태 타입 정의. messages는 add_messages로 누적 관리.
+from typing import TypedDict, List, Optional, Annotated
 from langchain_core.messages import BaseMessage
 from langgraph.graph import add_messages
 
 class AgentState(TypedDict, total=False):
-    # LangGraph 권장: 메시지 스트림 하나로 에이전트 루프 구성
+    # 메시지 스트림(히스토리). add_messages 덕분에 자동 누적/머지.
     messages: Annotated[List[BaseMessage], add_messages]
 
-    # 세션/식별
+    # 세션 식별
     member_id: int
-    db: Any
 
-    # 이번 턴 사용자 입력을 확실히 못박기 위한 필드
-    current_user_input: str
-
-    # 모델 응답
+    # 모델 최종 응답
     response: Optional[str]
 
     # 프롬프트 구성 요소
     base_system_text: str   # 역할 규칙(고정)
+    preload_context: str          # 선주입 컨텍스트(요약/회상/감정)
     tool_context: str       # 도구 결과 요약(가변)
 
+    force_summary: bool
+    disable_preload: bool
+    debug_trace: bool

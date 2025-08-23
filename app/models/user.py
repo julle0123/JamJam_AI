@@ -1,4 +1,5 @@
 # app/models/user.py
+# 소셜 로그인 회원 테이블 모델.
 from sqlalchemy import Column, String, DateTime, BigInteger, Integer
 from datetime import datetime
 from sqlalchemy.orm import relationship
@@ -16,6 +17,7 @@ class User(Base):
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     last_login_at = Column(DateTime, nullable=True)
 
+    # 역참조: chat_log.member
     chat_logs = relationship("ChatLog", back_populates="member", cascade="all, delete-orphan")
 
     def __repr__(self):

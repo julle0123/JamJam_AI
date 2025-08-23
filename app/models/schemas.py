@@ -9,6 +9,8 @@ class ChatRequest(BaseModel):
     input: str                   # 사용자 입력 문장
     session_id: Optional[str] = None
     force_summary: Optional[bool] = False
+    disable_preload: Optional[bool] = False  # 선주입(요약/회상/감정) 끄기
+    debug_trace: Optional[bool] = False      # 실시간 LLM 스트림/툴콜 트레이스
 
 # 챗봇 대화 응답 스키마
 class ChatResponse(BaseModel):

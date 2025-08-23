@@ -1,35 +1,50 @@
 # app/graph/runner.py
+# 그래프 인스턴스 생애주기 관리 + 에이전트 호출 편의 함수.
 from typing import Optional
 from sqlalchemy.orm import Session
-from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.messages import HumanMessage
+
 from app.graph.graph import build_agent_graph
-from app.services.memory import get_user_history
+from app.graph.callbacks import ReactTraceCallback
+import logging
+
+# 그래프는 체크포인터 포함으로 모듈 레벨에 1회 생성
+_graph = build_agent_graph()
 
 async def run_chat_agent(
     user_input: str,
     user_id: int,
-    db: Optional[Session] = None,
+    db: Optional[Session] = None,         # 직렬화 이슈로 state에는 넣지 않음
     session_id: Optional[str] = None,
+    force_summary: bool = False,
+    disable_preload: bool = False,
+    debug_trace: bool = False,            # ← 스트림/툴콜 트레이스 ON
 ) -> str:
-    graph = build_agent_graph()
-
-    agent_with_history = RunnableWithMessageHistory(
-        graph,
-        get_user_history,
-        input_messages_key="messages",
-        history_messages_key="messages",
-    )
-
     sid = str(session_id or user_id)
 
-    out = await agent_with_history.ainvoke(
-        # 이번 턴 입력은 반드시 current_user_input에 넣고,
-        # messages는 히스토리 저장용으로 그래프가 반환하는 값을 사용하게 둔다.
-        {"current_user_input": user_input, "member_id": user_id},
+    # debug_trace일 때만 콜백 연결
+    callbacks = [ReactTraceCallback(logging.getLogger("react"))] if debug_trace else None
+
+    out = await _graph.ainvoke(
+        {
+            "messages": [HumanMessage(content=user_input)],
+            "member_id": user_id,
+            "force_summary": force_summary,
+            "disable_preload": disable_preload,
+            "debug_trace": debug_trace,
+        },
         config={
-            "configurable": {"session_id": sid},
+            "configurable": {"thread_id": sid},
             "tags": ["agent", f"user:{user_id}", f"session:{sid}"],
-            "metadata": {"member_id": user_id, "session_id": sid},
+            "metadata": {
+                "member_id": user_id,
+                "session_id": sid,
+                "force_summary": force_summary,
+                "disable_preload": disable_preload,
+                "debug_trace": debug_trace,
+            },
+            "callbacks": callbacks,   # ← 여기서 콜백 주입
         },
     )
     return out.get("response", "")
+

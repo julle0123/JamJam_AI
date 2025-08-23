@@ -1,4 +1,5 @@
 # app/core/config.py
+# 환경변수 기반 설정. DB URL 조합 포함.
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -23,9 +24,17 @@ class Settings(BaseSettings):
     mysql_password: str
     mysql_db: str
 
+    # Logging 옵션 (.env로 제어 가능)
+    sqlalchemy_echo: bool = False                 # SQL 원문 로깅(운영 기본 꺼짐)
+    sqlalchemy_log_level: str = "WARNING"         # sqlalchemy.engine 로거 레벨
+    react_log_level: str = "INFO"                 # ReAct 로거 레벨(app.main에서 적용)
+
     @property
     def database_url(self) -> str:
-        return f"mysql+pymysql://{self.mysql_user}:{self.mysql_password}@{self.mysql_host}:{self.mysql_port}/{self.mysql_db}?charset=utf8mb4"
+        return (
+            f"mysql+pymysql://{self.mysql_user}:{self.mysql_password}"
+            f"@{self.mysql_host}:{self.mysql_port}/{self.mysql_db}?charset=utf8mb4"
+        )
 
     class Config:
         env_file = ".env"

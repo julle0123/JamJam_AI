@@ -1,4 +1,6 @@
 # app/services/memory.py
+# (a) 인메모리 히스토리 for RunnableWithMessageHistory, (b) Qdrant 벡터 메모리 저장/검색, (c) "회상 모드": 유사 시점 주변 DB 대화창 확장.
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -12,7 +14,9 @@ from sqlalchemy.orm import Session
 from app.core.client import vectorstore
 from app.models.chat_log import ChatLog
 
-# -------- In-memory history for RunnableWithMessageHistory --------
+# ★ 추가: Qdrant 필터 모델 사용
+from qdrant_client.http import models as qmodels
+
 _store: Dict[str, ChatMessageHistory] = {}
 
 def get_user_history(session_id: str) -> BaseChatMessageHistory:
@@ -21,7 +25,6 @@ def get_user_history(session_id: str) -> BaseChatMessageHistory:
         _store[key] = ChatMessageHistory()
     return _store[key]
 
-# -------- 내부 유틸 --------
 def _ensure_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
@@ -41,44 +44,44 @@ def _to_text(value: Any) -> str:
         return value
     return str(value)
 
-# -------- Qdrant 저장 --------
 def add_chat_memory(
     member_id: int,
     text: Any,
-    role: str,                      # "user" | "bot"
+    role: str,
     chat_id: Optional[int] = None,
     created_at: Optional[datetime] = None,
 ) -> None:
     text_str = _to_text(text).strip()
     if not text_str:
         return
-
     created_utc = _ensure_utc(created_at) if created_at else datetime.now(timezone.utc)
 
-    # member_id를 문자열로 저장 (인덱스 KEYWORD와 일치)
+    # member_id를 문자열로 저장 (KEYWORD 인덱스와 호환)
     vectorstore.add_texts(
         texts=[text_str],
         metadatas=[{
-            "member_id": str(member_id),  # ← 문자열 저장
+            "member_id": str(member_id),
             "role": role,
             "created_at": created_utc.isoformat(),
             "chat_id": chat_id,
         }],
     )
 
-# -------- 일반 유사도 검색 --------
+def _member_filter(member_id: Optional[int]) -> Optional[qmodels.Filter]:
+    if member_id is None:
+        return None
+    return qmodels.Filter(
+        must=[qmodels.FieldCondition(
+            key="member_id",
+            match=qmodels.MatchValue(value=str(member_id))
+        )]
+    )
+
 def search_memory(query: str, top_k: int = 3, member_id: Optional[int] = None) -> str:
     query_str = _to_text(query)
     try:
-        if member_id is None:
-            results = vectorstore.similarity_search(query_str, k=top_k)
-        else:
-            # 문자열 매치
-            results = vectorstore.similarity_search(
-                query_str,
-                k=top_k,
-                filter={"must": [{"key": "member_id", "match": {"value": str(member_id)}}]},  # ← 문자열
-            )
+        filt = _member_filter(member_id)
+        results = vectorstore.similarity_search(query_str, k=top_k, filter=filt)
     except Exception as e:
         print(f"[Qdrant] filtered search failed -> fallback. reason: {e}")
         results = vectorstore.similarity_search(query_str, k=top_k)
@@ -87,7 +90,6 @@ def search_memory(query: str, top_k: int = 3, member_id: Optional[int] = None) -
         return ""
     return "\n".join(doc.page_content for doc in results)
 
-# -------- 회상 모드 --------
 _RECALL_HINTS = [
     "기억나", "기억 해", "그때", "그 일", "그날", "그 순간",
     "지난번", "전에 말했", "예전에 말했", "그 얘기"
@@ -136,10 +138,11 @@ def recall_or_general_context(
     if not db or not _looks_like_recall(user_input):
         return search_memory(_to_text(user_input), top_k=top_k, member_id=member_id)
 
+    filt = _member_filter(member_id)
     docs_with_scores = vectorstore.similarity_search_with_score(
         _to_text(user_input),
         k=top_k,
-        filter={"must": [{"key": "member_id", "match": {"value": str(member_id)}}]},  # ← 문자열
+        filter=filt,
     )
     if not docs_with_scores:
         return ""
