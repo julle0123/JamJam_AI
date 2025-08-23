@@ -15,6 +15,7 @@ from app.core.db import SessionLocal
 from app.services.summary import summarize_conversation
 from app.services.memory import recall_or_general_context
 from app.services.emotion_service import predict_emotion
+from app.models.user import User  # ← 성별 조회
 
 logger = logging.getLogger("react")
 
@@ -37,19 +38,68 @@ AGENT_PROMPT = ChatPromptTemplate.from_messages([
     ("system", "도구 결과 요약(이전 턴):\n{tool_context}"),
 ])
 
+def _get_user_gender(member_id: Optional[int]) -> int:
+    """
+    DB에서 사용자 성별을 읽는다.
+    반환: 0 또는 None=미지정, 1=남성, 2=여성
+    """
+    if not member_id:
+        return 0
+    db = SessionLocal()
+    try:
+        u = db.query(User).filter(User.member_id == member_id).first()
+        g = getattr(u, "gender", None) if u else None
+        return int(g) if g is not None else 0
+    except Exception as e:
+        logger.warning("=== ROLE / gender fetch warn: %s", e)
+        return 0
+    finally:
+        db.close()
+
+
+def _user_title_for(member_id: Optional[int]) -> str:
+    """
+    성별에 따른 호칭:
+      - 1(남성) → '아빠'
+      - 2(여성) → '엄마'
+      - 0/기타 → '' (호칭 생략)
+    """
+    g = _get_user_gender(member_id)
+    return "아빠" if g == 1 else ("엄마" if g == 2 else "")
+
 def _ensure_role_text(member_id: Optional[int]) -> str:
+    """역할/규칙 + (성별 호칭 규칙) + 도구 목록을 구성."""
     try:
         role = load_prompt_template("role")
     except Exception:
-        role = ("당신은 3~7세 남자아이 역할의 챗봇이다. 단순 어휘. 정체성/장황/이모지 금지.")
+        role = (
+            "당신은 3~7세 남자아이 역할의 챗봇이다. 순수하고 단순한 어휘로만 대화한다. "
+            "정체성 노출 금지. 장황한 설명/성인투/이모지 금지."
+        )
     mi = "" if member_id is None else str(member_id)
-    return (
-        f"{role}\n\n"
-        "[도구]\n"
+
+    # ▼ 성별 기반 호칭 규칙 주입
+    title = _user_title_for(member_id)
+    if title:
+        honorific_rule = (
+            "\n\n[호칭 규칙]\n"
+            f"- 사용자를 '{title}'라고 부른다.\n"
+            "- 상황상 호칭이 부자연스러우면 생략해도 된다.\n"
+        )
+    else:
+        honorific_rule = (
+            "\n\n[호칭 규칙]\n"
+            "- 특정 성별 호칭(엄마/아빠)을 사용하지 말고 자연스럽게 대화한다.\n"
+        )
+
+    tools_block = (
+        "\n\n[도구 목록]\n"
         f"- classify_emotion_tool(text)\n"
         f"- summarize_tool(member_id={mi}, limit=20)\n"
         f"- rag_search_tool(query, member_id={mi}, top_k=3)\n"
     )
+
+    return role + honorific_rule + tools_block
 
 def _history_all(messages: List[BaseMessage]) -> List[BaseMessage]:
     return [m for m in messages if isinstance(m, (HumanMessage, AIMessage, ToolMessage))]

@@ -16,6 +16,7 @@ class User(Base):
     profile_image_url = Column(String(255), nullable=True)
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     last_login_at = Column(DateTime, nullable=True)
+    gender = Column(Integer, nullable=True, default=None)
 
     # 역참조: chat_log.member
     chat_logs = relationship("ChatLog", back_populates="member", cascade="all, delete-orphan")
