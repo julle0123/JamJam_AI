@@ -31,7 +31,6 @@ def configure_logging():
     logging.getLogger("sqlalchemy.orm").setLevel(logging.WARNING)
     logging.getLogger("alembic").setLevel(logging.WARNING)
 
-    # 외부 HTTP 클라이언트 소음 억제(선택)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 

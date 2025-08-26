@@ -7,10 +7,9 @@ from qdrant_client.http import models as qmodels
 
 router = APIRouter()
 
-# --- 정책 추천 전용 컬렉션 이름 ---
 COLLECTION_NAME = os.getenv("COLLECTION_NAME2", "policy_embeddings")
 
-# --- 요청/응답 모델 ---
+# 요청/응답 모델 
 class RecommendRequest(BaseModel):
     region: str
     current_status: List[str]
@@ -45,7 +44,7 @@ def ensure_policy_indexes():
 # API 초기화 시 인덱스 보장
 ensure_policy_indexes()
 
-# --- 쿼리 텍스트 생성 ---
+# 쿼리 텍스트 생성 
 def build_query_text(req: RecommendRequest) -> str:
     conds = [f"지역={req.region}", f"상태={','.join(req.current_status)}"]
     if req.childbirth_status == 1:
@@ -62,7 +61,7 @@ def build_query_text(req: RecommendRequest) -> str:
         conds.append(f"중위소득={req.income}%")
     return " ".join(conds)
 
-# --- 정책 추천 API ---
+# 정책 추천 API 
 @router.post("/recommend", response_model=List[RecommendResponse])
 def recommend(req: RecommendRequest):
     # 1. 사용자 입력 임베딩
