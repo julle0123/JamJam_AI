@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     qdrant_url: str
     qdrant_api_key: str
     collection_name: str = "jamjam_history"
+    collection_name2 :str = "policy_embeddings"
 
     # LangSmith
     langsmith_tracing: bool = False

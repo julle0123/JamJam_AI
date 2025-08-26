@@ -2,7 +2,7 @@
 # FastAPI 앱 부트스트랩, 로깅 수준 일괄 조정(소음 억제), 라우터/테이블 초기화.
 
 from fastapi import FastAPI
-from app.api import chat
+from app.api import chat, recommend
 from app.models.base import Base
 from app.core.db import engine
 from dotenv import load_dotenv
@@ -44,6 +44,7 @@ Base.metadata.create_all(bind=engine)
 
 # 라우터
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
+app.include_router(recommend.router, prefix="/policy", tags=["Policy"])
 
 @app.get("/")
 def root():
