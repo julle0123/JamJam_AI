@@ -17,3 +17,5 @@ transformers
 datasets
 accelerate
 cryptography
+aiohttp
+httpx
