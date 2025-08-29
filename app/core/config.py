@@ -29,13 +29,6 @@ class Settings(BaseSettings):
     sqlalchemy_echo: bool = False                 # SQL 원문 로깅(운영 기본 꺼짐)
     sqlalchemy_log_level: str = "WARNING"         # sqlalchemy.engine 로거 레벨
     react_log_level: str = "INFO"                 # ReAct 로거 레벨(app.main에서 적용)
-
-    # Supertone TTS
-    SUPERTONE_API_KEY: str
-    SUPERTONE_TTS_ENDPOINT: str = "https://api.supertone.ai/tts"
-    AUDIO_CACHE_DIR: str = "data/audio"
-    SUPERTONE_TOBY_VOICE_ID: str
-    SUPERTONE_EMOTION_PARAM_NAME: str = "style"
     
     @property
     def database_url(self) -> str:
