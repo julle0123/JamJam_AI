@@ -41,10 +41,7 @@ jobs:
           LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
           LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
-          SUPERTONE_API_KEY=${{ secrets.SUPERTONE_API_KEY }}
-          SUPERTONE_TTS_ENDPOINT=${{ secrets.SUPERTONE_TTS_ENDPOINT }}
-          SUPERTONE_TOBY_VOICE_ID=${{ secrets.SUPERTONE_TOBY_VOICE_ID }}
-          SUPERTONE_EMOTION_PARAM_NAME=style
+         
           EOF
 
           echo "==== Docker 정리(공간 확보) ===="
