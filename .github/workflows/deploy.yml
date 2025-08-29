@@ -41,7 +41,6 @@ jobs:
           LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
           LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
-         
           EOF
 
           echo "==== Docker 정리(공간 확보) ===="
@@ -49,19 +48,19 @@ jobs:
           sudo docker builder prune -af || true
 
           echo "==== 기존 컨테이너 정리 ===="
-          docker rm -f jamjam || echo "기존 컨테이너 없음"
+          sudo docker rm -f jamjam || echo "기존 컨테이너 없음"
 
           echo "==== 새 이미지 빌드 ===="
-          docker build -t jamjam-ai .
+          sudo docker build -t jamjam-ai .
 
           echo "==== 새 컨테이너 실행 ===="
-          docker run -d \
+          sudo docker run -d \
             -p 8000:8000 \
             --env-file .env \
             --restart always \
             --name jamjam \
-            -v /home/ubuntu/best_model:/app/best_model \
+            -v /home/ubuntu/emotion_model:/app/best_model \
             jamjam-ai
 
           echo "==== 배포 완료 ===="
-          docker ps | grep jamjam
+          sudo docker ps | grep jamjam
