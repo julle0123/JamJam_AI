@@ -2,13 +2,12 @@
 # 로컬 감정분류 모델 로드/추론. 전역 1회 로드로 성능 안정.
 
 import torch
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
+from transformers import AutoTokenizer, RobertaForSequenceClassification
 
-# MODEL_PATH = "outputs_trainer_final2/best_model"  # 예: 개발 환경
-MODEL_PATH = "/app/best_model"                      # 예: 컨테이너/서버 환경
+MODEL_PATH = "/app/best_model"  # 컨테이너/서버 환경
 
 # 전역 1회 로드
-tokenizer = RobertaTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
 model = RobertaForSequenceClassification.from_pretrained(MODEL_PATH, local_files_only=True)
 
 id2label = {
