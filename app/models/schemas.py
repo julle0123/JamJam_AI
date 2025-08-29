@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
 # 챗봇 대화 응답 스키마
 class ChatResponse(BaseModel):
     output: str
+    user_emotion: Optional[str] = None
 
 # 대화 로그 저장용 입력 스키마
 class ChatLogCreate(BaseModel):

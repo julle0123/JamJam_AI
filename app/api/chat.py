@@ -11,6 +11,7 @@ from app.graph.runner import run_chat_agent
 from app.models.chat_log import ChatLog
 from app.core.db import get_db
 from app.services.memory import add_chat_memory
+from app.services.emotion_service import predict_emotion
 
 # KST 고정: 서버/컨테이너 TZ와 무관하게 한국시간 기준 기록용
 KST = timezone(timedelta(hours=9))
@@ -28,6 +29,14 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
         disable_preload=req.disable_preload or False,
         debug_trace=req.debug_trace or False,
     )
+    # 사용자 발화 감정 분류(실패해도 서비스 흐름 유지)
+    user_emotion = None
+    try:
+        if req.input and req.input.strip():
+            user_emotion = predict_emotion(req.input)
+    except Exception as e:
+        print(f"[emotion] user predict warn: {e}")
+
 
     # 2) 관계형 DB에 대화 로그 저장
     created = datetime.now(KST)
@@ -59,4 +68,4 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
         print(f"[memory] save warn: {e}")
 
     # 4) 최종 응답
-    return ChatResponse(output=output_text)
+    return ChatResponse(output=output_text, user_emotion=user_emotion)
