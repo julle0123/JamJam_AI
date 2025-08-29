@@ -11,7 +11,7 @@ from app.graph.runner import run_chat_agent
 from app.models.chat_log import ChatLog
 from app.core.db import get_db
 from app.services.memory import add_chat_memory
-from app.services.emotion_service import predict_emotion
+#from app.services.emotion_service import predict_emotion
 
 # KST 고정: 서버/컨테이너 TZ와 무관하게 한국시간 기준 기록용
 KST = timezone(timedelta(hours=9))
