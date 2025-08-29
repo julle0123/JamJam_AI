@@ -6,7 +6,6 @@ from app.api import chat, recommend, tts
 from app.models.base import Base
 from app.core.db import engine
 from dotenv import load_dotenv
-import app.models
 
 import logging
 from logging import StreamHandler, Formatter
@@ -44,7 +43,6 @@ Base.metadata.create_all(bind=engine)
 # 라우터
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(recommend.router, prefix="/policy", tags=["Policy"])
-app.include_router(tts.router, prefix="", tags=["chat-tts"])
 
 @app.get("/")
 def root():
