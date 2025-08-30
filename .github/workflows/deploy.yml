@@ -20,26 +20,13 @@ jobs:
         key: ${{ secrets.AWS_EC2_KEY }}
         port: 22
         script: |
-          set -euxo pipefail
-
-          REPO_DIR="$HOME/JamJam_AI"
-          REPO_URL="https://github.com/julle0123/JamJam_AI.git"
-
           echo "==== 프로젝트 디렉토리 확인 ===="
-          if [ ! -d "$REPO_DIR/.git" ]; then
-            git clone "$REPO_URL" "$REPO_DIR"
-          fi
-          cd "$REPO_DIR"
-
-          echo "==== 원격 main으로 정확히 맞추기 ===="
-          git fetch --prune origin main
-          git checkout -B main origin/main
-          git reset --hard origin/main
-          git rev-parse --abbrev-ref HEAD
-          git rev-parse --short HEAD
+          cd ~/JamJam_AI || git clone https://github.com/julle0123/JamJam_AI.git ~/JamJam_AI
+          cd ~/JamJam_AI
+          git pull origin main
 
           echo "==== .env 파일 구성 ===="
-          cat > .env <<'EOF'
+          cat > .env <<EOF
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           QDRANT_URL=${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}
@@ -56,15 +43,12 @@ jobs:
           LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
           EOF
 
-          echo "==== 모델 디렉토리 준비 ===="
-          mkdir -p /home/ubuntu/emotion_model
-
           echo "==== Docker 정리(공간 확보) ===="
           sudo docker system prune -af || true
           sudo docker builder prune -af || true
 
           echo "==== 기존 컨테이너 정리 ===="
-          sudo docker rm -f jamjam || true
+          sudo docker rm -f jamjam || echo "기존 컨테이너 없음"
 
           echo "==== 새 이미지 빌드 ===="
           sudo docker build -t jamjam-ai .
@@ -79,5 +63,4 @@ jobs:
             jamjam-ai
 
           echo "==== 배포 완료 ===="
-          sudo docker ps -a | grep jamjam || true
-          sudo docker logs --tail 100 jamjam || true
+          sudo docker ps | grep jamjam
